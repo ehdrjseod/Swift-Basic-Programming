@@ -46,6 +46,7 @@ value.map{ $0 + 3 }     // nil(== Optional<Int>.none)
 // 우리가 앞서 맵을 사용해보았던 Array, Dictionary, Set 등등 스위프트의 많은 컬렉션 타입이 함수객체라는 것입니다.
 
 // 옵셔널의 map 메서드 구현
+/*
 extension Optional {
     func map<U>(f: (Wrapped) -> U) -> U {
         switch self {
@@ -54,6 +55,7 @@ extension Optional {
         }
     }
 }
+ */
 // 옵셔널의 map(_:) 메서드를 호출하면 옵셔널 스스로 값이 있는지 없는지 switch 구문으로 판단합니다.
 // 값이 있다면 전달받은 함수에 자신의 값을 적용한 결과값을 다시 컨텍스트에 넣어 반환하고, 그렇지 않다면 함수를 실행하지 않고 빈 컨텍스트를 반환합니다.
 
@@ -101,5 +103,73 @@ print(mappedMultipleContainer)
 
 print(flatmappedMultipleContainer)      // [1, 2, 3, 4, 5]
 
-// p.309.....
+// 컨테이너 내부의 데이터에 다시 맵을 적용했을 때와 플랫맵을 적용했을 때의 결과는 확연히 다릅니다.
+// 플래맵은 내부의 값을 1차원적으로 펼쳐놓는 작업도 하기 때문에, 값을 꺼내어 모두 동일한 위상으로 펼처놓는 모양새를 갖출 수 있습니다.
+/// 그래서 값을 일자로 평평하게 펼친다(flatten)고 해서 플랫맵으로 불리는 것입니다.
+// 스위프트에서 옵셔널에 관련된 여러 컨테이너의 값을 연달아 처리할 때, 바인딩을 통해 체인 형식으로 사용할 수 있기에 맵보다는 플랫맵이 더욱 유용하게 쓰일 수 있습니다.
 
+// 플랫맵의 활용
+func stringToInteger(_ string: String) -> Int? {
+    return Int(string)
+}
+
+func integerToString(_ integer: Int) -> String? {
+    return "\(integer)"
+}
+
+var optionalString: String? = "2"
+
+let flattenResult = optionalString.flatMap(stringToInteger)
+                                  .flatMap(integerToString)
+                                  .flatMap(stringToInteger)
+print(flattenResult)        // Optional(2)
+
+let mappedResult = optionalString.map(stringToInteger)      // 더 이상 체인 연결 불가
+print(mappedResult)     // Optional(Optional(2))
+
+// 옵셔널의 맵과 플랫맵의 정의
+/*
+func map<U>(_ transform: (Wrapped) throws -> U) rethrows -> U?
+func flatMap<U>(_ transform: (Wrapped) throws -> U?) rethrows -> U?
+*/
+
+// 옵셔널 바인딩을 통한 연산
+var result: Int?
+if let string: String = optionalString {
+    if let number: Int = stringToInteger(string) {
+        if let finalString: String = integerToString(number) {
+            if let finalNumber: Int = stringToInteger(finalString) {
+                result = Optional(finalNumber)
+            }
+        }
+    }
+}
+
+print(result)       // Optional(2)
+
+if let string: String = optionalString,
+    let number: Int = stringToInteger(string),
+    let finalString: String = integerToString(number),
+    let finalNumber: Int = stringToInteger(finalString) {
+    
+    result = Optional(finalNumber)
+}
+
+print(result)       // Optional(2)
+
+// 플랫맵 체이닝 중 빈 컨텍스트를 만났을 때의 결과
+func integerToNil(param: Int) -> String? {
+    return nil
+}
+
+optionalString = "2"
+
+result = optionalString.flatMap(stringToInteger)
+    .flatMap(integerToNil)
+    .flatMap(stringToInteger)
+
+print(result)       // nil
+
+// flatMap(intToNil) 부분에서 nil, 즉 Optional.none을 반환받기 때문에 호출되는 메서드는 무시합니다.
+// 이는 앞서 우리가 알아본 옵셔널 체이닝과 완전히 같은 동작입니다. 바로 옵셔널이 모나드이기 때문에 가능한 것입니다.
+// 옵셔널 체이닝, 옵셔널 바인딩, 플랫맵 등은 모나드와 관련된 연산입니다. 스위프트의 기본 모나드 타입이 아니더라도 플랫맵 모양의 모나드 연산자를 구현하면 사용자 정의 타입(흔히 클래스 또는 구조체 등)도 모나드로 사용할 수 있습니다.

@@ -384,8 +384,8 @@ serveCustomer( { customersInLine.removeFirst() } )       // "Now serving YoangWh
 // customersInLine is ["YoangWha", "SangYong", "SungHun", "HaMi"]
 customersInLine = ["YoangWha", "SangYong", "SungHun", "HaMi"]
 
-func serveCustomer2(_ cutomerProvider: @autoclosure () -> String) {
-    print("Now serving \(customerProvider())!")
+func serveCustomer2(_ customerProvider: @autoclosure () -> String) {
+    print("Now serving \(customersProvider())!")
 }
 
 serveCustomer2(customersInLine.removeFirst())   // "Now serving YoangWha!"
