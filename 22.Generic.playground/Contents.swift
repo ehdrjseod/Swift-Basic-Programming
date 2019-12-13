@@ -287,3 +287,194 @@ print(anyStack.topElement)          // Optional("2")
 // 대신 기존의 제네릭 타입에 정의되어 있는 Element라는 타입을 사용할 수 있습니다.
 
 // ========== 타입 제약 ==========
+// 제네릭 기능의 타입 매개변수는 실제 사용 시 타입 제약 없이 사용할 수 있었습니다.
+// 그러나 종종 제네릭 함수가 처리해야 할 기능이 특정 타입에 한정되어야만 처리할 수 있다던가, 제네릭 타입을 특정 프로토콜을 따르는 타입만 사용할 수 있도록 제약을 두어야 하는 상황이 발생할 수 있습니다.
+// 타입 제약은 타입 매개변수가 가져야 할 제약사항을 지정할 수 있는 방법입니다. 예를 들어 타입 매개변수 자리에 사용할 실제 타입이 특정 클래스를 상속 받은 타입이어야 한다든지,
+// 특정 프로토콜을 준수하는 타입이어야 한다는 등의 제약을 줄 수 있다는 뜻입니다. 타입제약(Type Constraints)은 클래스 타입 또는 프로토콜로만 줄 수 있습니다.
+// 즉 열거형, 구조체 등의 타입은 타입 제약의 타입으로 사용할 수 없습니다. 예를 들어 Dictionary의 키는 Hashable 프로토콜을 준수하는 타입만 사용할 수 있습니다.
+
+// Dictionary 타입 정의
+/*
+public struct Dictionary<Key: Hashable, Value> : Collection, ExpressibleByDictionaryLiteral { /* ... */ }
+*/
+// Dictionary의 두 타입 매개변수는 Key와 Value입니다. 그런데 Key 뒤에 콜론(:)을 붙인 다음에 Hashable이라고 명시되어 있습니다.
+// 이는 타입 매개변수인 Key 타입은 Hashable 프로토콜을 준수해야 한다는 뜻입니다. 즉, Key로 사용할 수 있는 타입은 Hashable 프로토콜을 준수하는 타입이어야 한다는 것입니다.
+// Hashable은 스위프트 표준 라이브러리에 정의되어 있는 프로토콜이며 스위프트의 기본 타입(String, Int, Bool 등등)은 모두 Hashable 프로토콜을 준수합니다.
+// 제네릭 타입에 제약을 주고 싶으면 타입 매개변수 뒤에 콜론을 붙인 후 원하는 클래스 타입 또는 프로토콜을 명시하면 됩니다.
+
+// 제네릭 타입 제약
+func swapTwoValues<T: BinaryInteger>(_ a: inout T, _ b: inout T) {
+    // 함수 구현
+}
+
+struct Stack2<Element: Hashable> {
+    // 구조체 구현
+}
+// 여러 제약을 추가하고 싶다면 콤마로 구분해주는 것이 아니라 where 절을 사용할 수 있습니다.
+// Stack 구조체의 Element 타입 매개변수의 타입을 Hashable 프로토콜을 준수하는 타입으로 제약을 준다면,
+// Any 타입은 Hashable 프로토콜을 준수하지 않기 때문에 Any 타입은 사용할 수 없습니다.
+
+// 제네릭 타입 제약 추가
+func swapTwoValues2<T: BinaryInteger>(_ a: inout T, _ b: inout T) where T: FloatingPoint {
+    // 함수 구현
+}
+
+// substractTwoValue 함수의 잘못된 구현
+/*
+func substractTwoValue<T>(_ a: T, _ b: T) -> T {
+    return a - b
+}
+// 뺄셈을 하려면 뺄셈 연산자를 사용할 수 있는 타입이어야 연산이 가능하다는 한계가 있습니다.
+
+// substractTwoValue 함수의 구현
+func substractTwoValue<T: BinaryInteger>(_ a: T, _ b: T) -> T {
+    return a - b
+}
+*/
+
+/*
+  [TIP] 스위프트의 표준 라이브러리에 정의되어 있는 프로토콜 중 타입 제약에 자주 사용할 만한 프로토콜에는
+        Hashable, Equatable, Comparable, Indexable, InteratorProtocol, Error, Collection, CustomStringConvertible 등이 있습니다.
+ */
+
+// ========== 프로토콜의 연관 타입 ==========
+// 프로토콜을 정의할 때 연관 타입(Associated Type)을 함께 정의하면 유용할 때가 있습니다.
+// 연관 타입은 프로토콜에서 사용할 수 있는 플레이스홀더 이름입니다. 즉, 제네릭에서는 어떤 타입이 들어올지 모를 때,
+// 타입 매개변수를 통해 '종류는 알 수 없지만, 어떤 타입이 여기에 쓰일 것이다'라고 표현해주었다면 연관 타입은 타입 매개변수의 그 역할 프로토콜에서 수행할 수 있도록 만들어진 기능입니다.
+
+// Container 프로토콜 정의
+protocol Container {
+    associatedtype ItemType
+    var count: Int { get }
+    mutating func append(_ item: ItemType)
+    subscript(i: Int) -> ItemType { get }
+}
+// Container 프로토콜은 존재하지 않는 타입인 ItemType을 연관 타입으로 정의하여 프로토콜 정의에서 타입 이름으로 활용합니다.
+// 이는 제네릭의 타입 매개변수와 유사한 기능으로, 프로토콜 정의 내부에서 사용할 타입이 '그 어떤 것이어도 상관없지만, 하나의 타입임은 분명하다'라는 의미입니다.
+// Container 프로토콜을 준수하는 타입이 꼭 구현해야 할 기능을 생각해봅시다.
+/*
+  * 컨테이너의 새로운 아이템을 append(_:) 메서드를 통해 추가할 수 있어야 합니다.
+  * 아이템 개수를 확인할 수 있도록 Int 타입 값을 갖는 count 프로퍼티를 구현해야 합니다.
+  * Int 타입의 인덱스 값으로 특정 인덱스에 해당하는 아이템을 가져올 수 있는 서브스크립트를 구현해야 합니다.
+ */
+
+// MyContainer 클래스 정의
+class MyContainer: Container {
+    var items: Array<Int> = Array<Int>()
+    
+    var count: Int {
+        return items.count
+    }
+    
+    func append(_ item: Int) {
+        items.append(item)
+    }
+    
+    subscript(i: Int) -> Int {
+        return items[i]
+    }
+}
+// MyContainer 클래스는 Container 프로토콜을 준수하기 위해서 필요한 것을 모두 갖추었습니다.
+// 연관 타입인 ItemType 대신에 실제 타입인 Int 타입으로 구현해주었고, 이는 프로토콜의 요구사항을 모두 충족하므로 큰 문제가 없습니다.
+// 프로토콜에서 ItemType이라는 연관 타입만 정의했을 뿐, 특정 타입을 지정하지 않았기 때문입니다.
+// 실제 프로토콜 정의를 준수하기 위해 구현할 때는 ItemType을 하나의 타입으로 일관성 있게 구현하면 됩니다.
+
+// IntStack 구조체의 Container 프로토콜 준수
+struct IntStack: Container {
+    // 기존 IntStack 구조체 구현
+    var items: [Int]()
+    mutating func push(_ item: Int) {
+        items.append(item)
+    }
+    mutating func pop() -> Int {
+        return items.removeLast()
+    }
+    
+    // Container 프로토콜 준수를 위한 구현
+    mutating func append(_ item: Int) {
+        self.push(item)
+    }
+    var count: Int {
+        return items.count
+    }
+    subscript(i: Int) -> Int {
+        return items[i]
+    }
+}
+
+// IntStack 구조체의 typealias 사용
+struct IntStack2: Container {
+    typealias ItemType = Int
+    
+    // 기존 IntStack 구조체 구현
+    var items = [ItemType]()
+    mutating func push(_ item: ItemType) {
+        items.append(item)
+    }
+    mutating func pop() -> ItemType {
+        return items.removeLast()
+    }
+    
+    // Container 프로토콜 준수를 위한 구현
+    mutating func append(_ item: Int) {
+        self.push(item)
+    }
+    var count: ItemType {
+        return items.count
+    }
+    subscript(i: ItemType) -> ItemType {
+        return items[i]
+    }
+}
+// 프로토콜의 연관 타입에 대응하여 실제 타입을 사용할 수도 있지만, 제네릭 타입에서는 연관 타입과 타입 매개변수를 대응시킬 수도 있습니다.
+
+// Stack 구조체의 Container 프로토콜 준수
+struct Stack3<Element>: Container {
+    // 기존 Stack<Element> 구조체 구현
+    var items = [Element]()
+    mutating func push(_ item: Element) {
+        items.append(item)
+    }
+    mutating func pop() -> Element {
+        return items.removeLast()
+    }
+    
+    
+    // Container 프로토콜 준수를 위한 구현
+    mutating func append(_ item: Element) {
+        self.push(item)
+    }
+    var count: Int {
+        return items.count
+    }
+    subscript(i: Int) -> Element {
+        return items[i]
+    }
+}
+
+// ========== 제네릭 서브스크립트 ==========
+// 제네릭 함수(메서드)를 구현할 수 있었던 것처럼 서브스크립트도 제네릭을 활용하여 타입에 큰 제한 없이 유연하게 구현할 수 있습니다.
+// 물론 타입 제약을 사용하여 제네릭을 활용하는 타입에 제약을 줄 수도 있습니다.
+
+// Stack 구조체의 제네릭 서브스크립트 구현과 사용
+extension Stack3 {
+    subscript<Indices: Sequence>(indices: Indices) -> [ItemType] where Indices.Iterator.Element == Int {
+        var result = [ItemType]()
+        for index in indices {
+            result.append(self[index])
+        }
+        return result
+    }
+}
+
+var integerStack2: Stack3<Int> = Stack3<Int>()
+integerStack2.append(1)
+integerStack2.append(2)
+integerStack2.append(3)
+integerStack2.append(4)
+integerStack2.append(5)
+
+print(integerStack2[0...2])      // [1, 2, 3]
+// Stack3 구조체의 익스텐션으로 서브스크립트를 추가했습니다. 서브스크립트는 Indices라는 플레이스홀더를 사용하여 매개변수를 제네릭하게 받아들일 수 있습니다.
+// Indices는 Sequence 프로토콜을 준수하는 타입으로 제약이 추가되어 있습니다. 또, Indices 타입 Iterator의 Element 타입이 Int 타입이어야 하는 제약이 추가되었습니다.
+// 서브스크립트는 이 Indices 타입의 indices라는 매개변수로 인덱스 값을 받을 수 있습니다. 그 결과 indices 시퀀스의 인덱스 값에 해당하는 스택 요소의 값을 배열로 반환합니다.
